@@ -8,17 +8,18 @@ import String;
  * Syntax definition
  * - define a grammar for JSON (https://json.org/)
  */
- 
+
 start syntax JSON
   = Object;
-  
+
 syntax Object
   = "{" {Element ","}* "}"
   ;
-  
+
 syntax Element
-  = ; // Fill in  
-  
+  = String ":" Value
+  ;
+
 syntax Value
   = String
   | Number
@@ -30,46 +31,54 @@ syntax Value
 
 syntax Null
   = "null";
-  
+
 syntax Boolean
-  = // Fill in
-  | // Fill in
-  ;  
-  
+  = "true" | "false";
+
 syntax Array
-  = "[" {Value ","}* "]"
-  ;  
-  
+  = "[" {Value ","}* "]";
+
 lexical String
   = [\"] ![\"]* [\"]; // slightly simplified
-  
-lexical Number
-  = ; // Fill in. Hint; think of the pattern for numbers in regular expressions. How do you accept a number in a regex?  
 
-layout Whitespace = [\ \t\n]* !>> [\ \t\n];  
-  
+lexical Number
+  = [1-9][0-9]* ("." [0-9]*)?
+  | "0" ("." [0-9]*)?
+  ;
+
+layout Whitespace = [\ \t\n]* !>> [\ \t\n];
+
 // import the module in the console
-start[JSON] example() 
-  = parse(#start[JSON], 
+start[JSON] example()
+  = parse(#start[JSON],
           "{
-          '  \"age\": 42, 
+          '  \"age\": 42,
           '  \"name\": \"Joe\",
           '  \"address\": {
           '     \"street\": \"Wallstreet\",
           '     \"number\": 102
           '  }
-          '}");    
-  
+          '}");
 
 
 // use visit/deep match to find all element names
 // - use concrete pattern matching
 // - use "<x>" to convert a String x to str
 set[str] propNames(start[JSON] json) {
-
+  set[str] names = {};
+  visit(json) {
+    case (Element) `<String name>: <Value _>`: names += "<name>"[1..-1];
+  }
+  return names;
 }
 
-// define a recursive transformation mapping JSON to map[str,value] 
+set[str] propNames_(start[JSON] json) {
+  names = for (/(Element) `<String name>: <Value _>` := json)
+    append("<name>"[1..-1]);
+  return toSet(names);
+}
+
+// define a recursive transformation mapping JSON to map[str,value]
 // - every Value constructor alternative needs a 'transformation' function
 // - define a data type for representing null;
 
